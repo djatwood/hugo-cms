@@ -8,18 +8,18 @@ import (
 )
 
 //go:embed templates/*.html
-var templatesDir embed.FS
+var embedded embed.FS
 var templates = make(map[string]*template.Template)
 
 func main() {
-	base, err := templatesDir.ReadFile("templates/base.html")
+	base, err := embedded.ReadFile("templates/base.html")
 	if err != nil {
 		panic(err)
 	}
 	templates["base"] = template.New("base")
 	templates["base"].Parse(string(base))
 
-	fs, err := templatesDir.ReadDir("templates")
+	fs, err := embedded.ReadDir("templates")
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +29,7 @@ func main() {
 			continue
 		}
 
-		data, err := templatesDir.ReadFile(fmt.Sprintf("templates/%s", name))
+		data, err := embedded.ReadFile(fmt.Sprintf("templates/%s", name))
 		if err != nil {
 			panic(err)
 		}
