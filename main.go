@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"text/template"
+	"time"
 )
 
 //go:embed templates/*.html
@@ -16,16 +21,29 @@ var embedded embed.FS
 var templates = make(map[string]*template.Template)
 
 func main() {
+	err := parseTemplates()
+	if err != nil {
+		log.Fatalf("Failed to parse templates %s", err.Error())
+	}
+
+	http.Handle("/", handle(render))
+	err = runServer()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func parseTemplates() error {
 	base, err := embedded.ReadFile("templates/base.html")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	templates["base"] = template.New("base")
 	templates["base"].Parse(string(base))
 
 	fs, err := embedded.ReadDir("templates")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	for _, f := range fs {
 		name := f.Name()
@@ -35,21 +53,45 @@ func main() {
 
 		data, err := embedded.ReadFile(fmt.Sprintf("templates/%s", name))
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		templates[name], err = templates["base"].Clone()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		_, err = templates[name].Parse(string(data))
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
-	http.Handle("/", handle(render))
-	http.ListenAndServe(":4120", nil)
+	return nil
+}
+
+func runServer() error {
+	server := http.Server{
+		Addr:    ":4120",
+		Handler: http.DefaultServeMux,
+	}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	log.Println("Server started on port " + server.Addr[1:])
+	<-done
+	log.Println("\nShutting down server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	return server.Shutdown(ctx)
 }
 
 func handle(next http.HandlerFunc, methods ...string) http.Handler {
