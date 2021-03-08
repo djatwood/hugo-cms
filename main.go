@@ -4,6 +4,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -75,37 +76,48 @@ func listSites(w http.ResponseWriter, r *http.Request) {
 	info, err := os.Stat(p)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			w.WriteHeader(http.StatusNotFound)
+			renderGeneric(w, http.StatusNotFound)
 		} else {
-			panic(err)
+			renderGeneric(w, http.StatusInternalServerError)
 		}
 		return
 	}
 
-	if info.IsDir() {
+	if !info.IsDir() {
+		err = renderFile(w, p)
+	} else {
 		if !strings.HasSuffix(p, "/") {
 			w.Header().Set("location", r.URL.Path+"/")
 			w.WriteHeader(http.StatusPermanentRedirect)
 			return
 		}
-
-		list, err := os.ReadDir(p)
-		if err != nil {
-			panic(err)
-		}
-		err = templates["list.html"].Execute(w, list)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		d, err := os.ReadFile(p)
-		if err != nil {
-			panic(err)
-		}
-
-		err = templates["single.html"].Execute(w, string(d))
-		if err != nil {
-			panic(err)
-		}
+		err = renderDir(w, p)
 	}
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func renderGeneric(w http.ResponseWriter, code int) error {
+	w.WriteHeader(code)
+	return templates["generic.html"].Execute(w, http.StatusText(code))
+}
+
+func renderFile(w io.Writer, path string) error {
+	d, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	return templates["single.html"].Execute(w, string(d))
+}
+
+func renderDir(w io.Writer, path string) error {
+	list, err := os.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	return templates["list.html"].Execute(w, list)
 }
