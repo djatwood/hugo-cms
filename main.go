@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"os"
 	"text/template"
 )
 
@@ -68,5 +69,36 @@ func handle(next http.HandlerFunc, methods ...string) http.Handler {
 }
 
 func listSites(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, World!")
+	p := "sites" + r.URL.Path
+	fmt.Println(p)
+	info, err := os.Stat(p)
+	if err != nil {
+		if err == os.ErrNotExist {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			panic(err)
+		}
+		return
+	}
+
+	if info.IsDir() {
+		list, err := os.ReadDir(p)
+		if err != nil {
+			panic(err)
+		}
+		err = templates["list.html"].Execute(w, list)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		d, err := os.ReadFile(p)
+		if err != nil {
+			panic(err)
+		}
+
+		err = templates["single.html"].Execute(w, string(d))
+		if err != nil {
+			panic(err)
+		}
+	}
 }
