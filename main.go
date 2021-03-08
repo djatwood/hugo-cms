@@ -2,9 +2,11 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"text/template"
 )
 
@@ -70,10 +72,9 @@ func handle(next http.HandlerFunc, methods ...string) http.Handler {
 
 func listSites(w http.ResponseWriter, r *http.Request) {
 	p := "sites" + r.URL.Path
-	fmt.Println(p)
 	info, err := os.Stat(p)
 	if err != nil {
-		if err == os.ErrNotExist {
+		if errors.Is(err, os.ErrNotExist) {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
 			panic(err)
@@ -82,6 +83,12 @@ func listSites(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if info.IsDir() {
+		if !strings.HasSuffix(p, "/") {
+			w.Header().Set("location", r.URL.Path+"/")
+			w.WriteHeader(http.StatusPermanentRedirect)
+			return
+		}
+
 		list, err := os.ReadDir(p)
 		if err != nil {
 			panic(err)
