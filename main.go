@@ -11,16 +11,47 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 	"text/template"
 	"time"
+
+	"github.com/ghodss/yaml"
 )
 
 type templateData struct {
 	Title   string
 	Request *http.Request
 	Data    interface{}
+	Site    site
+}
+
+type site struct {
+	Sections  []section
+	templates map[string]frontmatter
+}
+
+type section struct {
+	Label     string
+	Path      string
+	Match     string
+	Templates []string
+}
+
+type frontmatter struct {
+	Label        string
+	HideBody     bool
+	DisplayField string
+	Blocks       []block
+}
+
+type block struct {
+	Kind        string
+	Label       string
+	Name        string
+	Description string
+	Config      map[string]interface{}
 }
 
 //go:embed templates/*.html
@@ -134,6 +165,42 @@ func render(w http.ResponseWriter, r *http.Request) {
 	d := templateData{
 		Title:   strings.TrimSuffix(p, "/"),
 		Request: r,
+	}
+
+	splitURL := strings.Split(r.URL.Path, "/")
+	if len(splitURL[1]) > 0 {
+		b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/config.yaml", splitURL[1]))
+		if err != nil {
+			renderGeneric(w, http.StatusInternalServerError)
+			return
+		}
+		s := site{templates: make(map[string]frontmatter)}
+		err = yaml.Unmarshal(b, &s)
+		if err != nil {
+			renderGeneric(w, http.StatusInternalServerError)
+			return
+		}
+
+		fs, err := os.ReadDir(fmt.Sprintf("sites/%s/.cms/templates", splitURL[1]))
+		if err != nil {
+			renderGeneric(w, http.StatusInternalServerError)
+			return
+		}
+
+		for _, f := range fs {
+			name := f.Name()
+			b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/templates/%s", splitURL[1], name))
+			if err != nil {
+				renderGeneric(w, http.StatusInternalServerError)
+				return
+			}
+			key := strings.TrimSuffix(name, path.Ext(name))
+			t := new(frontmatter)
+			yaml.Unmarshal(b, t)
+			s.templates[key] = *t
+		}
+
+		d.Site = s
 	}
 
 	var buffer bytes.Buffer
