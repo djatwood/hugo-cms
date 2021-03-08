@@ -48,15 +48,14 @@ func main() {
 		}
 	}
 
-	http.Handle("/", handle(listSites))
+	http.Handle("/", handle(render))
 	http.ListenAndServe(":4120", nil)
 }
 
 func handle(next http.HandlerFunc, methods ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if len(methods) < 1 && r.Method == "GET" {
-			next(w, r)
-			return
+		if len(methods) < 1 {
+			methods = []string{"GET", "HEAD"}
 		}
 
 		for _, m := range methods {
@@ -71,7 +70,7 @@ func handle(next http.HandlerFunc, methods ...string) http.Handler {
 	})
 }
 
-func listSites(w http.ResponseWriter, r *http.Request) {
+func render(w http.ResponseWriter, r *http.Request) {
 	p := "sites" + r.URL.Path
 	info, err := os.Stat(p)
 	if err != nil {
