@@ -17,6 +17,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/ghodss/yaml"
 )
 
@@ -37,6 +38,7 @@ type section struct {
 	Label     string
 	Path      string
 	Match     string
+	Extension string
 	Templates []string
 }
 
@@ -244,12 +246,38 @@ func (d *templateData) renderFile(w io.Writer, path string) error {
 	return templates["single.html"].Execute(w, d)
 }
 
-func (d *templateData) renderDir(w io.Writer, path string) error {
-	list, err := os.ReadDir(path)
-	if err != nil {
-		return err
-	}
-	d.Data = list
+func (d *templateData) renderDir(w io.Writer, path string) (err error) {
+	list := []string{}
 
+	check := strings.TrimSuffix(strings.TrimPrefix(path, "sites/"+d.Site.Dir+"/"), "/")
+	for _, s := range d.Site.Sections {
+		if check != s.Path {
+			continue
+		}
+
+		list, err = doublestar.Glob(path + s.Match + s.Extension)
+		if err != nil {
+			return err
+		}
+		for i, n := range list {
+			list[i] = strings.Split(strings.TrimPrefix(n, path), "/")[0]
+		}
+
+		break
+	}
+
+	if len(list) < 1 {
+		dir, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+
+		list, err = dir.Readdirnames(-1)
+		if err != nil {
+			return err
+		}
+	}
+
+	d.Data = list
 	return templates["list.html"].Execute(w, d)
 }

@@ -1,8 +1,6 @@
 {{ define "main" }}
 <h1>{{ .Title }}</h1>
 {{ range .Data }}
-<p>
-    <a href="{{ .Name }}">{{ .Name }}</a>
-</p>
+<p><a href="{{ . }}">{{ . }}</a></p>
 {{ end }}
 {{ end }}
