@@ -44,10 +44,29 @@ func main() {
 		}
 	}
 
-	http.HandleFunc("/", handler)
+	http.Handle("/", handle(listSites))
 	http.ListenAndServe(":4120", nil)
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func handle(next http.HandlerFunc, methods ...string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(methods) < 1 && r.Method == "GET" {
+			next(w, r)
+			return
+		}
+
+		for _, m := range methods {
+			if m == r.Method {
+				next(w, r)
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(http.StatusText(http.StatusMethodNotAllowed)))
+	})
+}
+
+func listSites(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello, World!")
 }
