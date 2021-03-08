@@ -29,6 +29,7 @@ type templateData struct {
 
 type site struct {
 	Sections  []section
+	Dir       string
 	templates map[string]frontmatter
 }
 
@@ -169,19 +170,24 @@ func render(w http.ResponseWriter, r *http.Request) {
 
 	splitURL := strings.Split(r.URL.Path, "/")
 	if len(splitURL[1]) > 0 {
-		b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/config.yaml", splitURL[1]))
+		s := site{
+			Dir:       splitURL[1],
+			templates: make(map[string]frontmatter),
+		}
+
+		b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/config.yaml", s.Dir))
 		if err != nil {
 			renderGeneric(w, http.StatusInternalServerError)
 			return
 		}
-		s := site{templates: make(map[string]frontmatter)}
+
 		err = yaml.Unmarshal(b, &s)
 		if err != nil {
 			renderGeneric(w, http.StatusInternalServerError)
 			return
 		}
 
-		fs, err := os.ReadDir(fmt.Sprintf("sites/%s/.cms/templates", splitURL[1]))
+		fs, err := os.ReadDir(fmt.Sprintf("sites/%s/.cms/templates", s.Dir))
 		if err != nil {
 			renderGeneric(w, http.StatusInternalServerError)
 			return
@@ -189,7 +195,7 @@ func render(w http.ResponseWriter, r *http.Request) {
 
 		for _, f := range fs {
 			name := f.Name()
-			b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/templates/%s", splitURL[1], name))
+			b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/templates/%s", s.Dir, name))
 			if err != nil {
 				renderGeneric(w, http.StatusInternalServerError)
 				return
