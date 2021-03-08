@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"errors"
@@ -135,19 +136,23 @@ func render(w http.ResponseWriter, r *http.Request) {
 		Request: r,
 	}
 
+	var buffer bytes.Buffer
 	if !info.IsDir() {
-		err = d.renderFile(w, p)
+		err = d.renderFile(&buffer, p)
 	} else {
 		if !strings.HasSuffix(p, "/") {
 			w.Header().Set("location", r.URL.Path+"/")
 			w.WriteHeader(http.StatusPermanentRedirect)
 			return
 		}
-		err = d.renderDir(w, p)
+		err = d.renderDir(&buffer, p)
 	}
 
 	if err != nil {
-		panic(err)
+		renderGeneric(w, http.StatusInternalServerError)
+		log.Println(err)
+	} else {
+		w.Write(buffer.Bytes())
 	}
 }
 
