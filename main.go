@@ -16,6 +16,12 @@ import (
 	"time"
 )
 
+type templateData struct {
+	Title   string
+	Request *http.Request
+	Data    interface{}
+}
+
 //go:embed templates/*.html
 var embedded embed.FS
 var templates = make(map[string]*template.Template)
@@ -86,7 +92,7 @@ func runServer() error {
 
 	log.Println("Server started on port " + server.Addr[1:])
 	<-done
-	log.Println("\nShutting down server")
+	log.Println("Shutting down server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -124,15 +130,20 @@ func render(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	d := templateData{
+		Title:   strings.TrimSuffix(p, "/"),
+		Request: r,
+	}
+
 	if !info.IsDir() {
-		err = renderFile(w, p)
+		err = d.renderFile(w, p)
 	} else {
 		if !strings.HasSuffix(p, "/") {
 			w.Header().Set("location", r.URL.Path+"/")
 			w.WriteHeader(http.StatusPermanentRedirect)
 			return
 		}
-		err = renderDir(w, p)
+		err = d.renderDir(w, p)
 	}
 
 	if err != nil {
@@ -145,20 +156,22 @@ func renderGeneric(w http.ResponseWriter, code int) error {
 	return templates["generic.html"].Execute(w, http.StatusText(code))
 }
 
-func renderFile(w io.Writer, path string) error {
-	d, err := os.ReadFile(path)
+func (d *templateData) renderFile(w io.Writer, path string) error {
+	f, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
+	d.Data = string(f)
 
-	return templates["single.html"].Execute(w, string(d))
+	return templates["single.html"].Execute(w, d)
 }
 
-func renderDir(w io.Writer, path string) error {
+func (d *templateData) renderDir(w io.Writer, path string) error {
 	list, err := os.ReadDir(path)
 	if err != nil {
 		return err
 	}
+	d.Data = list
 
-	return templates["list.html"].Execute(w, list)
+	return templates["list.html"].Execute(w, d)
 }
