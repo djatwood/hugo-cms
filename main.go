@@ -219,18 +219,18 @@ func render(w http.ResponseWriter, r *http.Request) {
 			s.templates[key] = *t
 		}
 
-		d.Site = &s
-	}
-
-	check := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"+d.Site.Dir+"/"), "/")
-	if len(check) > 0 {
-		for _, s := range d.Site.Sections {
-			if strings.HasPrefix(check, s.Path) && (d.Section == nil || s.Path > d.Section.Path) {
-				d.Section = s
-				d.Title = s.Label
-				d.Title += strings.TrimPrefix(check, d.Section.Path)
+		check := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"+s.Dir+"/"), "/")
+		if len(check) > 0 {
+			for _, section := range s.Sections {
+				if strings.HasPrefix(check, section.Path) && (d.Section == nil || section.Path > d.Section.Path) {
+					d.Section = section
+					d.Title = section.Label
+					d.Title += strings.TrimPrefix(check, d.Section.Path)
+				}
 			}
 		}
+
+		d.Site = &s
 	}
 
 	var buf bytes.Buffer
