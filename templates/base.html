@@ -27,9 +27,9 @@
 </head>
 
 <body>
-    {{ with .Site.Sections }}
+    {{ with .Site }}
     <aside>
-        {{ range . }}
+        {{ range .Sections }}
         <p><a href="{{ printf " /%s/%s" $.Site.Dir .Path }}">{{ .Label }}</a></p>
         {{ end }}
     </aside>

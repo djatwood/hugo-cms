@@ -25,11 +25,12 @@ type templateData struct {
 	Title   string
 	Request *http.Request
 	Data    interface{}
-	Site    site
+	Site    *site
 }
 
 type site struct {
-	Sections  []section
+	Sections  []*section
+	sections  map[string]*section
 	Dir       string
 	templates map[string]frontmatter
 }
@@ -155,19 +156,24 @@ func handle(next http.HandlerFunc, methods ...string) http.Handler {
 
 func render(w http.ResponseWriter, r *http.Request) {
 	p := "sites" + r.URL.Path
-	info, err := os.Stat(p)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			renderGeneric(w, http.StatusNotFound)
-		} else {
-			renderGeneric(w, http.StatusInternalServerError)
-		}
-		return
-	}
-
 	d := templateData{
 		Title:   strings.TrimSuffix(p, "/"),
 		Request: r,
+	}
+
+	info, err := os.Stat(p)
+	if err != nil {
+		var code int
+		if errors.Is(err, os.ErrNotExist) {
+			code = http.StatusNotFound
+		} else {
+			code = http.StatusInternalServerError
+		}
+		err = d.renderGeneric(w, code)
+		if err != nil {
+			panic(err)
+		}
+		return
 	}
 
 	splitURL := strings.Split(r.URL.Path, "/")
@@ -179,19 +185,19 @@ func render(w http.ResponseWriter, r *http.Request) {
 
 		b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/config.yaml", s.Dir))
 		if err != nil {
-			renderGeneric(w, http.StatusInternalServerError)
+			d.renderGeneric(w, http.StatusInternalServerError)
 			return
 		}
 
 		err = yaml.Unmarshal(b, &s)
 		if err != nil {
-			renderGeneric(w, http.StatusInternalServerError)
+			d.renderGeneric(w, http.StatusInternalServerError)
 			return
 		}
 
 		fs, err := os.ReadDir(fmt.Sprintf("sites/%s/.cms/templates", s.Dir))
 		if err != nil {
-			renderGeneric(w, http.StatusInternalServerError)
+			d.renderGeneric(w, http.StatusInternalServerError)
 			return
 		}
 
@@ -199,7 +205,7 @@ func render(w http.ResponseWriter, r *http.Request) {
 			name := f.Name()
 			b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/templates/%s", s.Dir, name))
 			if err != nil {
-				renderGeneric(w, http.StatusInternalServerError)
+				d.renderGeneric(w, http.StatusInternalServerError)
 				return
 			}
 			key := strings.TrimSuffix(name, path.Ext(name))
@@ -208,11 +214,13 @@ func render(w http.ResponseWriter, r *http.Request) {
 			s.templates[key] = *t
 		}
 
-		d.Site = s
+		d.Site = &s
 	}
 
 	var buffer bytes.Buffer
-	if !info.IsDir() {
+	if d.Site == nil {
+		err = d.renderSites(&buffer)
+	} else if !info.IsDir() {
 		err = d.renderFile(&buffer, p)
 	} else {
 		if !strings.HasSuffix(p, "/") {
@@ -224,16 +232,17 @@ func render(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		renderGeneric(w, http.StatusInternalServerError)
+		d.renderGeneric(w, http.StatusInternalServerError)
 		log.Println(err)
 	} else {
 		w.Write(buffer.Bytes())
 	}
 }
 
-func renderGeneric(w http.ResponseWriter, code int) error {
+func (d *templateData) renderGeneric(w http.ResponseWriter, code int) error {
 	w.WriteHeader(code)
-	return templates["generic.html"].Execute(w, http.StatusText(code))
+	d.Data = http.StatusText(code)
+	return templates["generic.html"].Execute(w, d)
 }
 
 func (d *templateData) renderFile(w io.Writer, path string) error {
@@ -279,5 +288,19 @@ func (d *templateData) renderDir(w io.Writer, path string) (err error) {
 	}
 
 	d.Data = list
+	return templates["list.html"].Execute(w, d)
+}
+
+func (d *templateData) renderSites(w io.Writer) error {
+	f, err := os.Open("sites")
+	if err != nil {
+		return err
+	}
+
+	d.Data, err = f.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+
 	return templates["list.html"].Execute(w, d)
 }
