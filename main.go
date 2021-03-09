@@ -26,6 +26,7 @@ type templateData struct {
 	Request *http.Request
 	Data    interface{}
 	Site    *site
+	Section *section
 }
 
 type site struct {
@@ -194,6 +195,10 @@ func render(w http.ResponseWriter, r *http.Request) {
 			d.renderGeneric(w, http.StatusInternalServerError)
 			return
 		}
+		s.sections = make(map[string]*section)
+		for _, section := range s.Sections {
+			s.sections[section.Path] = section
+		}
 
 		fs, err := os.ReadDir(fmt.Sprintf("sites/%s/.cms/templates", s.Dir))
 		if err != nil {
@@ -217,25 +222,37 @@ func render(w http.ResponseWriter, r *http.Request) {
 		d.Site = &s
 	}
 
-	var buffer bytes.Buffer
+	check := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"+d.Site.Dir+"/"), "/")
+	if len(check) > 0 {
+		for _, s := range d.Site.Sections {
+			if strings.HasPrefix(check, s.Path) && (d.Section == nil || s.Path > d.Section.Path) {
+				d.Section = s
+				d.Title = s.Label
+				d.Title += strings.TrimPrefix(check, d.Section.Path)
+			}
+		}
+	}
+
+	var buf bytes.Buffer
 	if d.Site == nil {
-		err = d.renderSites(&buffer)
+		err = d.renderSites(&buf)
 	} else if !info.IsDir() {
-		err = d.renderFile(&buffer, p)
+		err = d.renderFile(&buf, p)
 	} else {
 		if !strings.HasSuffix(p, "/") {
 			w.Header().Set("location", r.URL.Path+"/")
 			w.WriteHeader(http.StatusPermanentRedirect)
 			return
 		}
-		err = d.renderDir(&buffer, p)
+
+		err = d.renderDir(&buf, p)
 	}
 
 	if err != nil {
 		d.renderGeneric(w, http.StatusInternalServerError)
 		log.Println(err)
 	} else {
-		w.Write(buffer.Bytes())
+		w.Write(buf.Bytes())
 	}
 }
 
@@ -257,25 +274,15 @@ func (d *templateData) renderFile(w io.Writer, path string) error {
 
 func (d *templateData) renderDir(w io.Writer, path string) (err error) {
 	list := []string{}
-
-	check := strings.TrimSuffix(strings.TrimPrefix(path, "sites/"+d.Site.Dir+"/"), "/")
-	for _, s := range d.Site.Sections {
-		if check != s.Path {
-			continue
-		}
-
-		list, err = doublestar.Glob(path + s.Match + s.Extension)
+	if d.Section != nil {
+		list, err = doublestar.Glob(path + d.Section.Match + d.Section.Extension)
 		if err != nil {
 			return err
 		}
 		for i, n := range list {
 			list[i] = strings.Split(strings.TrimPrefix(n, path), "/")[0]
 		}
-
-		break
-	}
-
-	if len(list) < 1 {
+	} else {
 		dir, err := os.Open(path)
 		if err != nil {
 			return err
