@@ -32,7 +32,7 @@ type templateData struct {
 type site struct {
 	Sections  []*section
 	Dir       string
-	templates map[string]frontmatter
+	templates map[string]tmpl
 }
 
 type section struct {
@@ -43,7 +43,7 @@ type section struct {
 	Templates []string
 }
 
-type frontmatter struct {
+type tmpl struct {
 	Label        string
 	HideBody     bool
 	DisplayField string
@@ -180,7 +180,7 @@ func render(w http.ResponseWriter, r *http.Request) {
 	if len(splitURL[1]) > 0 {
 		s := site{
 			Dir:       splitURL[1],
-			templates: make(map[string]frontmatter),
+			templates: make(map[string]tmpl),
 		}
 
 		b, err := os.ReadFile(fmt.Sprintf("sites/%s/.cms/config.yaml", s.Dir))
@@ -209,8 +209,12 @@ func render(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			key := strings.TrimSuffix(name, path.Ext(name))
-			t := new(frontmatter)
-			yaml.Unmarshal(b, t)
+			t := new(tmpl)
+			err = yaml.Unmarshal(b, t)
+			if err != nil {
+				d.renderGeneric(w, http.StatusInternalServerError)
+				return
+			}
 			s.templates[key] = *t
 		}
 
