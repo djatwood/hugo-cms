@@ -272,30 +272,37 @@ func (d *templateData) renderFile(w io.Writer, path string) error {
 	return templates["single.html"].Execute(w, d)
 }
 
-func (d *templateData) renderDir(w io.Writer, path string) (err error) {
-	list := []string{}
+func (d *templateData) renderDir(w io.Writer, path string) error {
+	if d.Site == nil {
+		dir, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+
+		list, err := dir.Readdirnames(-1)
+		if err != nil {
+			return err
+		}
+
+		d.Data = list
+		return templates["list.html"].Execute(w, d)
+	}
+
 	if d.Section != nil {
-		list, err = doublestar.Glob(path + d.Section.Match + d.Section.Extension)
+		list, err := doublestar.Glob(path + d.Section.Match + d.Section.Extension)
 		if err != nil {
 			return err
 		}
 		for i, n := range list {
 			list[i] = strings.Split(strings.TrimPrefix(n, path), "/")[0]
 		}
-	} else {
-		dir, err := os.Open(path)
-		if err != nil {
-			return err
-		}
 
-		list, err = dir.Readdirnames(-1)
-		if err != nil {
-			return err
-		}
+		d.Data = list
+		return templates["list.html"].Execute(w, d)
 	}
 
-	d.Data = list
-	return templates["list.html"].Execute(w, d)
+	d.Data = "Welcome to your CMS"
+	return templates["generic.html"].Execute(w, d)
 }
 
 func (d *templateData) renderSites(w io.Writer) error {
