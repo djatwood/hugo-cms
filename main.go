@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar"
-	"github.com/ghodss/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 type templateData struct {
@@ -267,8 +267,20 @@ func (d *templateData) renderFile(w io.Writer, path string) error {
 	if err != nil {
 		return err
 	}
-	d.Data = string(f)
 
+	m := yaml.MapSlice{}
+	err = yaml.Unmarshal(f, &m)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	start := bytes.LastIndex(f, []byte("---"))
+	m = append(m, yaml.MapItem{
+		Key:   "Content",
+		Value: strings.TrimSpace(string(f[start+3:])),
+	})
+
+	d.Data = m
 	return templates["single.html"].Execute(w, d)
 }
 
