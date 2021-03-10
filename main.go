@@ -31,7 +31,6 @@ type templateData struct {
 
 type site struct {
 	Sections  []*section
-	sections  map[string]*section
 	Dir       string
 	templates map[string]frontmatter
 }
@@ -194,10 +193,6 @@ func render(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			d.renderGeneric(w, http.StatusInternalServerError)
 			return
-		}
-		s.sections = make(map[string]*section)
-		for _, section := range s.Sections {
-			s.sections[section.Path] = section
 		}
 
 		fs, err := os.ReadDir(fmt.Sprintf("sites/%s/.cms/templates", s.Dir))
