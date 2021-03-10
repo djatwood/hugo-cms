@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"reflect"
 	"strings"
 	"syscall"
 	"text/template"
@@ -102,6 +103,7 @@ func parseTemplates() error {
 		if err != nil {
 			return err
 		}
+		templates[name].Funcs(template.FuncMap{"typeOf": typeOf})
 		_, err = templates[name].Parse(string(data))
 		if err != nil {
 			return err
@@ -328,4 +330,8 @@ func (d *templateData) renderSites(w io.Writer) error {
 	}
 
 	return templates["list.html"].Execute(w, d)
+}
+
+func typeOf(v interface{}) string {
+	return reflect.TypeOf(v).Kind().String()
 }

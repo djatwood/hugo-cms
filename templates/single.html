@@ -1,7 +1,20 @@
 {{ define "main" }}
 <h1>{{ .Title }}</h1>
-{{ range  .Data }}
-<p>{{ .Key }}</p>
-<pre>{{ .Value }}</pre>
+{{ template "blocks" .Data }}
+{{ end }}
+
+{{ define "blocks" }}
+{{ range . }}
+<div style="padding:20px;border:1px solid;">
+    {{ if eq "struct" (typeOf .) }}
+    <p>{{ .Key }}</p>
+    {{ if eq "slice" (typeOf .Value) }}
+    {{ template "blocks" .Value }}
+    {{ else }}
+    <textarea cols="30" rows="1">{{ .Value }}</textarea>
+    {{ end }}
+    {{ else }}
+    {{ end }}
+</div>
 {{ end }}
 {{ end }}
