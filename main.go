@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 	"time"
 )
@@ -75,8 +74,4 @@ func runServer(addr string) error {
 	defer cancel()
 
 	return e.Shutdown(ctx)
-}
-
-func typeOf(v interface{}) string {
-	return reflect.TypeOf(v).Kind().String()
 }
