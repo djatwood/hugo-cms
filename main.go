@@ -12,7 +12,6 @@ import (
 
 type site struct {
 	Sections map[string]*section
-	Dir      string
 }
 
 type section struct {

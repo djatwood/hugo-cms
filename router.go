@@ -53,14 +53,13 @@ func parseSite(name string) (*site, error) {
 		return nil, err
 	}
 
-	s := site{Dir: dir}
-
-	err = yaml.Unmarshal(file, &s)
+	s := new(site)
+	err = yaml.Unmarshal(file, s)
 	if err != nil {
 		return nil, err
 	}
 
-	return &s, nil
+	return s, nil
 }
 
 func getSite(c echo.Context) error {
@@ -91,7 +90,7 @@ func getSection(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, "section not found")
 	}
 
-	prefix := fmt.Sprintf("%s/%s/", s.Dir, section.Path)
+	prefix := fmt.Sprintf("sites/%s/%s/", name, section.Path)
 	files, err := doublestar.Glob(prefix + section.Match + section.Extension)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
@@ -134,7 +133,7 @@ func getFile(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, "section not found")
 	}
 
-	path := fmt.Sprintf("%s/%s/%s", s.Dir, section.Path, c.Param("*"))
+	path := fmt.Sprintf("sites/%s/%s/%s", name, section.Path, c.Param("*"))
 	stats, err := os.Stat(path)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
