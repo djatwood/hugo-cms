@@ -32,6 +32,7 @@ func listSites(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	defer dir.Close()
 
 	sites, err := dir.Readdirnames(-1)
 	if err != nil {
@@ -148,6 +149,10 @@ func getFile(c echo.Context) error {
 	}
 
 	file, err := os.Open(path)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	defer file.Close()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
