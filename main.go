@@ -21,7 +21,7 @@ type templateData struct {
 type site struct {
 	Sections  map[string]*section
 	Dir       string
-	templates map[string]tmpl
+	templates map[string]template
 }
 
 type section struct {
@@ -32,7 +32,7 @@ type section struct {
 	Templates []string
 }
 
-type tmpl struct {
+type template struct {
 	Label        string
 	HideBody     bool
 	DisplayField string
