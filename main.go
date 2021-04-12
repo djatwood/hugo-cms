@@ -10,14 +10,6 @@ import (
 	"time"
 )
 
-type templateData struct {
-	Title   string
-	Request *http.Request
-	Data    interface{}
-	Site    *site
-	Section *section
-}
-
 type site struct {
 	Sections  map[string]*section
 	Dir       string
