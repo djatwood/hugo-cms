@@ -11,9 +11,8 @@ import (
 )
 
 type site struct {
-	Sections  map[string]*section
-	Dir       string
-	templates map[string]template
+	Sections map[string]*section
+	Dir      string
 }
 
 type section struct {
