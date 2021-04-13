@@ -12,7 +12,6 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"gopkg.in/yaml.v2"
 )
 
 func server() *echo.Echo {
@@ -28,55 +27,6 @@ func server() *echo.Echo {
 	e.GET("/:site/:section/*", getFile)
 
 	return e
-}
-
-func listSites(c echo.Context) error {
-	dir, err := os.Open("sites")
-	if err != nil {
-		return err
-	}
-	defer dir.Close()
-
-	sites, err := dir.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, sites)
-}
-
-func parseSite(name string) (*site, error) {
-	dir := "sites/" + name
-	_, err := os.Stat(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.ReadFile(dir + "/.cms/config.yaml")
-	if err != nil {
-		return nil, err
-	}
-
-	s := new(site)
-	err = yaml.Unmarshal(file, s)
-	if err != nil {
-		return nil, err
-	}
-
-	return s, nil
-}
-
-func getSite(c echo.Context) error {
-	name := c.Param("site")
-	s, err := parseSite(name)
-	if errors.Is(err, os.ErrNotExist) {
-		return c.JSON(http.StatusNotFound, name+" not found")
-	}
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, s)
 }
 
 func getSection(c echo.Context) error {

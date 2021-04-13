@@ -10,7 +10,7 @@
 </script>
 
 <script lang="ts">
-	export let sites: string[];
+	export let sites: { Path; Name }[];
 </script>
 
 <svelte:head>
@@ -19,8 +19,8 @@
 
 <main>
 	<ol>
-		{#each sites as site}
-			<li><a href={site}>{site}</a></li>
+		{#each sites as { Path, Name }}
+			<li><a href={Path}>{Name}</a></li>
 		{/each}
 	</ol>
 </main>
