@@ -1,5 +1,5 @@
 <script lang="ts" context="module">
-	export async function load({ page, fetch, session, context }): Promise<{}> {
+	export async function load({ page, fetch }): Promise<{}> {
 		const result = await fetch(`http://127.0.0.1:4120/${page.params.site}`);
 		return {
 			props: {
