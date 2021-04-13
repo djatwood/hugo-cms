@@ -23,8 +23,8 @@
 
 {#if file.kind == "dir"}
 <ol>
-{#each file.data as f}
-<li><a href="/{siteKey}/{sectionKey}/r/{filepath}/{f}">{f}</a></li>
+{#each file.data as {Path, Name}}
+<li><a href="/{siteKey}/{sectionKey}/r/{filepath}/{Path}">{Name}</a></li>
 {/each}
 </ol>
 {:else}

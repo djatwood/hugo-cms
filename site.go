@@ -11,15 +11,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Site struct {
-	Name string
-	Path string
-}
-
-type siteConfig struct {
-	Title string
-}
-
 func listSites(c echo.Context) error {
 	dir, err := os.Open("sites")
 	if err != nil {
@@ -32,20 +23,20 @@ func listSites(c echo.Context) error {
 		return err
 	}
 
-	sites := make([]Site, len(paths))
+	sites := make([]ListEntry, len(paths))
 	for i, p := range paths {
 		f, err := os.ReadFile(fmt.Sprintf("sites/%s/config.toml", p))
 		if err != nil {
 			return err
 		}
 
-		config := new(siteConfig)
+		config := new(ConfigFile)
 		err = toml.Unmarshal(f, config)
 		if err != nil {
 			return err
 		}
 
-		sites[i] = Site{
+		sites[i] = ListEntry{
 			Name: config.Title,
 			Path: p,
 		}

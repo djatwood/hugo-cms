@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+type ListEntry struct {
+	Name string
+	Path string
+}
+
+type ConfigFile struct {
+	Title string
+}
+
 type site struct {
 	Sections map[string]*section
 }
@@ -64,4 +73,11 @@ func runServer(addr string) error {
 	defer cancel()
 
 	return e.Shutdown(ctx)
+}
+
+func minInt(a, b int) int {
+	if b < a {
+		return b
+	}
+	return a
 }

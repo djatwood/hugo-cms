@@ -16,5 +16,5 @@
 </script>
 
 {#each section as name}
-	<li><a href="/{siteKey}/{sectionKey}/{name}">{name}</a></li>
+	<li><a href="/{siteKey}/{sectionKey}/r/{name}">{name}</a></li>
 {/each}
