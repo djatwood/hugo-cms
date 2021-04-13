@@ -11,6 +11,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,6 +19,8 @@ func server() *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+
+	e.Use(middleware.CORS())
 
 	e.GET("/", listSites)
 	e.GET("/:site", getSite)
@@ -145,7 +148,7 @@ func getFile(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
-		return c.JSON(http.StatusOK, files)
+		return c.JSON(http.StatusOK, map[string]interface{}{"kind": "dir", "data": files})
 	}
 
 	file, err := os.Open(path)
@@ -159,7 +162,7 @@ func getFile(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
-	return c.String(http.StatusOK, string(data))
+	return c.JSON(http.StatusOK, map[string]interface{}{"kind": "file", "data": string(data)})
 }
 
 func getFileNames(path string) ([]string, error) {
