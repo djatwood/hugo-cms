@@ -4,11 +4,11 @@ There are only a few git-based headless-cms options that work with Hugo nicely. 
 
 Front-end powered by [SvelteKit](https://kit.svelte.dev/)
 
-# Local Testing
+## Local Testing
 
 **Install Dependencies:** `cd frontend && yarn`
 
-## Run
+### Run
 
 1. **Backend:** `go run .`
 2. **Frontend:** `cd frontend && yarn dev`
