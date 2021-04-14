@@ -14,13 +14,19 @@
 </script>
 
 <svelte:head>
-	<title>Hello world!</title>
+	<title>Hugo CMS</title>
 </svelte:head>
 
-<main>
-	<ol>
-		{#each sites as { Path, Name }}
-			<li><a href={Path}>{Name}</a></li>
-		{/each}
-	</ol>
+<main class="p-12">
+	<div class="max-w-screen-lg mx-auto">
+		<h1 class="text-3xl mb-4">Sites</h1>
+		<ol>
+			{#each sites as { Path, Name }}
+				<li class="border-t py-2">
+					<a href={Path}>{Name}</a>
+					<span class="float-right">{Path}</span>
+				</li>
+			{/each}
+		</ol>
+	</div>
 </main>

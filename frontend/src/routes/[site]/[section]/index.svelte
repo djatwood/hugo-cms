@@ -15,6 +15,11 @@
 	export let siteKey, sectionKey, section;
 </script>
 
-{#each section as name}
-	<li><a href="/{siteKey}/{sectionKey}/r/{name}">{name}</a></li>
-{/each}
+<p class="text-lg mb-4">{sectionKey}</p>
+<ol>
+	{#each section as name}
+		<li class="py-2 border-t">
+			<a href="/{siteKey}/{sectionKey}/r/{name}">{name}</a>
+		</li>
+	{/each}
+</ol>

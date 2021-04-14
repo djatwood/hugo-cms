@@ -1,6 +1,8 @@
 <script lang="ts" context="module">
 	export async function load({ page, fetch }): Promise<{}> {
-		console.log(`http://127.0.0.1:4120/${page.params.site}/${page.params.section}/${page.params.path}`)
+		console.log(
+			`http://127.0.0.1:4120/${page.params.site}/${page.params.section}/${page.params.path}`
+		);
 		const result = await fetch(
 			`http://127.0.0.1:4120/${page.params.site}/${page.params.section}/${page.params.path}`
 		);
@@ -20,16 +22,19 @@
 	export let siteKey, sectionKey, filepath, file;
 </script>
 
+{#if file.kind == 'dir'}
+	<p class="text-lg mb-4">{sectionKey}/{filepath}</p>
 
-{#if file.kind == "dir"}
-<ol>
-{#each file.data as {Path, Name}}
-<li><a href="/{siteKey}/{sectionKey}/r/{filepath}/{Path}">{Name}</a></li>
-{/each}
-</ol>
+	<ol>
+		{#each file.data as { Path, Name }}
+			<li class="py-2 border-t">
+				<a href="/{siteKey}/{sectionKey}/r/{filepath}/{Path}">{Name}</a>
+				<span class="float-right">{sectionKey}/{filepath}/{Path}</span>
+			</li>
+		{/each}
+	</ol>
 {:else}
-<pre>
+	<pre>
     {file.data}
 </pre>
 {/if}
-
