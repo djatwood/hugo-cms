@@ -30,32 +30,39 @@ func getSection(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, "section not found")
 	}
 
-	prefix := fmt.Sprintf("sites/%s/%s/", name, section.Path)
-	files, err := doublestar.Glob(prefix + section.Match + section.Extension)
+	prefix := fmt.Sprintf("sites/%s/%s", name, section.Path)
+	paths, err := doublestar.Glob(prefix + "/" + section.Match + section.Extension)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
+	files := make([]os.FileInfo, 0, len(paths))
 	existing := make(map[string]bool)
-	for i := 0; i < len(files); i++ {
-		name := strings.TrimPrefix(files[i], prefix)
-		trimmedName := strings.Split(name, string(os.PathSeparator))[0]
-
-		if name != trimmedName {
-			trimmedName += "/"
+	for _, path := range paths {
+		name := strings.TrimPrefix(path, prefix)
+		key := strings.Split(name, string(os.PathSeparator))[1]
+		if _, ok := existing[name]; ok {
+			continue
 		}
+		existing[key] = true
 
-		if _, ok := existing[trimmedName]; !ok {
-			files[i] = trimmedName
-			existing[trimmedName] = true
-		} else {
-			copy(files[i:], files[i+1:])
-			files = files[:len(files)-1]
-			i--
+		p, err := os.Stat(prefix + "/" + key)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
+		files = append(files, p)
 	}
 
-	return c.JSON(http.StatusOK, files)
+	sort.Slice(files, func(i, j int) bool {
+		return fileLess(files[i], files[j])
+	})
+
+	list, err := renameFileList(prefix, files)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, list)
 }
 
 func getFile(c echo.Context) error {
@@ -114,30 +121,38 @@ func getFileNames(dirPath string) ([]ListEntry, error) {
 	}
 
 	sort.Slice(files, func(i, j int) bool {
-		// Directories first
-		isDir := files[i].IsDir()
-		if isDir != files[j].IsDir() {
-			return isDir
-		}
-
-		// Then sort by last mod time
-		if files[i].ModTime() != files[j].ModTime() {
-			return files[i].ModTime().After(files[j].ModTime())
-		}
-
-		// Then sort by name
-		aName := files[i].Name()
-		bName := files[j].Name()
-		for i := 0; i < minInt(len(aName), len(bName)); i++ {
-			if aName[i] == bName[i] {
-				continue
-			}
-			return aName[i] < bName[i]
-		}
-
-		return len(aName) <= len(bName)
+		return fileLess(files[i], files[j])
 	})
 
+	return renameFileList(dirPath, files)
+}
+
+func fileLess(a, b os.FileInfo) bool {
+	// Directories first
+	isDir := a.IsDir()
+	if isDir != b.IsDir() {
+		return isDir
+	}
+
+	// Then sort by last mod time
+	if a.ModTime() != b.ModTime() {
+		return a.ModTime().After(b.ModTime())
+	}
+
+	// Then sort by name
+	aName := a.Name()
+	bName := b.Name()
+	for i := 0; i < minInt(len(aName), len(bName)); i++ {
+		if aName[i] == bName[i] {
+			continue
+		}
+		return aName[i] < bName[i]
+	}
+
+	return len(aName) <= len(bName)
+}
+
+func renameFileList(dirPath string, files []os.FileInfo) ([]ListEntry, error) {
 	list := make([]ListEntry, len(files))
 	for i := range files {
 		fileName := files[i].Name()
@@ -165,6 +180,5 @@ func getFileNames(dirPath string) ([]ListEntry, error) {
 			Path: fileName,
 		}
 	}
-
 	return list, nil
 }
