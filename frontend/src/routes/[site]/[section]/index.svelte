@@ -17,9 +17,9 @@
 
 <p class="text-lg mb-4">{sectionKey}</p>
 <ol>
-	{#each section as name}
+	{#each section as { Name, Path }}
 		<li class="py-2 border-t">
-			<a href="/{siteKey}/{sectionKey}/r/{name}">{name}</a>
+			<a href="/{siteKey}/{sectionKey}/{Path}">{Name}</a>
 		</li>
 	{/each}
 </ol>
