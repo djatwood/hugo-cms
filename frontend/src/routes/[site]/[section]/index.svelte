@@ -15,9 +15,9 @@
 	export let siteKey, sectionKey, section;
 </script>
 
-<p class="text-lg mb-4">{sectionKey}</p>
+<p class="text-lg mb-4">{section.label}</p>
 <ol>
-	{#each section as { Name, Path }}
+	{#each section.files as { Name, Path }}
 		<li class="py-2 border-t">
 			<a href="/{siteKey}/{sectionKey}/{Path}">{Name}</a>
 		</li>

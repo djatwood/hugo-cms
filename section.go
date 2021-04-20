@@ -62,7 +62,10 @@ func getSection(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusOK, list)
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"label": section.Label,
+		"files": list,
+	})
 }
 
 func getFile(c echo.Context) error {
