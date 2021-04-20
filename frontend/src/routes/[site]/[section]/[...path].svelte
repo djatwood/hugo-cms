@@ -14,7 +14,6 @@
 				file: await result.json()
 			}
 		};
-		return {};
 	}
 </script>
 
@@ -28,7 +27,7 @@
 	<ol>
 		{#each file.data as { Path, Name }}
 			<li class="py-2 border-t">
-				<a href="/{siteKey}/{sectionKey}/r/{filepath}/{Path}">{Name}</a>
+				<a href="/{siteKey}/{sectionKey}/{filepath}/{Path}">{Name}</a>
 				<span class="float-right">{sectionKey}/{filepath}/{Path}</span>
 			</li>
 		{/each}
