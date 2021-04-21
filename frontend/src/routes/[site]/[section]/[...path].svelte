@@ -1,11 +1,6 @@
 <script lang="ts" context="module">
 	export async function load({ page, fetch }): Promise<{}> {
-		console.log(
-			`http://127.0.0.1:4120/${page.params.site}/${page.params.section}/${page.params.path}`
-		);
-		const result = await fetch(
-			`http://127.0.0.1:4120/${page.params.site}/${page.params.section}/${page.params.path}`
-		);
+		const result = await fetch(`file.json?path=${page.params.path}`);
 		return {
 			props: {
 				siteKey: page.params.site,
@@ -33,7 +28,13 @@
 		{/each}
 	</ol>
 {:else}
+	<div class="grid grid-cols-2">
+		{#each Object.keys(file.frontmatter) as key}
+			<p>{key}</p>
+			<p>{file.frontmatter[key]}</p>
+		{/each}
+	</div>
 	<pre>
-    {file.data}
-</pre>
+    	{file.content}
+	</pre>
 {/if}
