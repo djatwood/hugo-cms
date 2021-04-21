@@ -4,10 +4,14 @@ import { load } from "js-yaml"
 /**
  * @type {import('@sveltejs/kit').RequestHandler}
  */
-export async function get({ params, query }) {
+export async function get({ query }) {
     const result = await fetch(
-        `http://127.0.0.1:4120/${params.site}/${params.section}/${query.get('path')}`
+        `http://127.0.0.1:4120/${query.get('path')}`
     );
+
+    if (!result.ok) {
+        return { body: { error: result.text() } }
+    }
 
     const file = await result.json();
     if (file.kind == "dir") return { body: file };

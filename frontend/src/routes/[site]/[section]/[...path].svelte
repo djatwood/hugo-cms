@@ -1,6 +1,9 @@
 <script lang="ts" context="module">
 	export async function load({ page, fetch }): Promise<{}> {
-		const result = await fetch(`file.json?path=${page.params.path}`);
+		const result = await fetch(
+			`/file.json?path=${page.params.site}/${page.params.section}/${page.params.path}`
+		);
+
 		return {
 			props: {
 				siteKey: page.params.site,
