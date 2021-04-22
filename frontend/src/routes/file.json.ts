@@ -14,7 +14,7 @@ export async function get({ query }) {
     }
 
     const file = await result.json();
-    if (file.kind == "dir") return { body: file };
+    if (file.kind != ".md") return { body: file };
 
     const data = file.data.split("---", 3)
     return {

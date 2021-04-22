@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -83,21 +84,21 @@ func getFile(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, "section not found")
 	}
 
-	path := fmt.Sprintf("sites/%s/%s/%s", name, section.Path, c.Param("*"))
-	stats, err := os.Stat(path)
+	p := fmt.Sprintf("sites/%s/%s/%s", name, section.Path, c.Param("*"))
+	stats, err := os.Stat(p)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	if stats.IsDir() {
-		files, err := getFileNames(path)
+		files, err := getFileNames(p)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, map[string]interface{}{"kind": "dir", "data": files})
 	}
 
-	file, err := os.Open(path)
+	file, err := os.Open(p)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
@@ -108,7 +109,12 @@ func getFile(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{"kind": "file", "data": string(data)})
+	ext := path.Ext(p)
+	if ext != ".md" {
+		return c.Blob(http.StatusOK, mime.TypeByExtension(ext), data)
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"kind": ext, "data": string(data)})
 }
 
 func getFileNames(dirPath string) ([]ListEntry, error) {
